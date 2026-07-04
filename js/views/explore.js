@@ -203,3 +203,53 @@ async function fetchAndRenderCards(ids) {
         gridContainer.appendChild(card);
     });
 }
+
+/**
+ * Extrae el lote de 12 IDs correspondiente a la página actual
+ * y los envía al motor de renderizado de tarjetas.
+ */
+async function renderPage() {
+    const inicio = (currentPage - 1) * ITEMS_PER_PAGE;
+    const fin = inicio + ITEMS_PER_PAGE;
+    const idsPagina = allResultsIds.slice(inicio, fin);
+
+    await fetchAndRenderCards(idsPagina);
+    actualizarControlesPaginacion();
+}
+
+/**
+ * Modifica el texto del indicador de página y deshabilita los 
+ * botones si el usuario llegó al límite.
+ */
+function actualizarControlesPaginacion() {
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const pageText = document.getElementById('page-indicator');
+    
+    const totalPages = Math.ceil(allResultsIds.length / ITEMS_PER_PAGE) || 1;
+
+    if (pageText) pageText.textContent = `Página ${currentPage} de ${totalPages}`;
+    if (prevBtn) prevBtn.disabled = (currentPage === 1);
+    if (nextBtn) nextBtn.disabled = (currentPage === totalPages);
+}
+
+/**
+ * Incrementa el contador y redibuja la pantalla con los siguientes IDs
+ */
+function nextPage() {
+    const totalPages = Math.ceil(allResultsIds.length / ITEMS_PER_PAGE);
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderPage();
+    }
+}
+
+/**
+ * Decrementa el contador y redibuja la pantalla con los IDs previos
+ */
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderPage();
+    }
+}
