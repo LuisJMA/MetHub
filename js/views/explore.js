@@ -215,6 +215,9 @@ async function renderPage() {
 
     await fetchAndRenderCards(idsPagina);
     actualizarControlesPaginacion();
+
+    // Sube automáticamente al inicio de la pantalla con un efecto suave
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /**
