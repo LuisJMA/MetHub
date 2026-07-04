@@ -47,6 +47,13 @@ function renderExplore() {
 
             <!-- Cuadrícula (Grid) donde se pintarán las tarjetas de las obras -->
             <div id="results-grid" class="results-grid"></div>
+
+            <!-- NUEVO: Controles de Paginación -->
+            <div class="pagination-controls">
+                <button id="prev-btn" onclick="prevPage()" disabled>Anterior</button>
+                <span id="page-indicator">Página 1 de 1</span>
+                <button id="next-btn" onclick="nextPage()" disabled>Siguiente</button>
+            </div>
         </div>
     `;
 
