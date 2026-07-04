@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetHub — Explorador del Met Museum</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+    <header>
+        <nav class="navbar">
+            <a href="#home" class="logo">MetHub</a>
+            <div class="nav-links">
+                <a href="#home" id="link-home">Inicio</a>
+                <a href="#explore" id="link-explore">Explorar</a>
+                <a href="#departments" id="link-departments">Departamentos</a>
+                <a href="#compare" id="link-compare">Comparador</a>
+            </div>
+        </nav>
+    </header>
+
+    <main id="app">
+        <h1>Cargando aplicación...</h1>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 MetHub. Desarrollado por un estudiante de Ingeniería.</p>
+        <p class="disclaimer">Datos provistos por la Open Access API del Metropolitan Museum of Art. Esta aplicación es de fines educativos y no está afiliada al museo.</p>
+    </footer>
+
+    <script src="js/servicios/met-api.js"></script>
+    <script src="js/views/explore.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>
