@@ -1,5 +1,11 @@
 // js/views/explore.js
 
+
+
+let allResultsIds = [];
+let currentPage = 1;
+const ITEMS_PER_PAGE = 12;
+
 /**
  * Renderiza la interfaz base del buscador global.
  * Esta función destruye el cascarón antiguo y dibuja el formulario real.
@@ -69,9 +75,9 @@ async function executeSearch(query) {
     const gridContainer = document.getElementById('results-grid');
 
     // 1. PREPARAR LA INTERFAZ (Estado de carga)
-    if (loader) loader.classList.remove('hidden'); // Mostramos el spinner de carga
-    if (messageContainer) messageContainer.textContent = '';  // Limpiamos mensajes anteriores
-    if (gridContainer) gridContainer.textContent = '';     // Vaciamos la cuadrícula de imágenes
+    if (loader) loader.classList.remove('hidden'); 
+    if (messageContainer) messageContainer.textContent = '';  
+    if (gridContainer) gridContainer.textContent = '';     
 
     try {
         // 2. CONSUMIR LA API REAL
@@ -90,18 +96,18 @@ async function executeSearch(query) {
             return; 
         }
 
-        // 4. OPTIMIZACIÓN DE RENDIMIENTO
-        // Limitamos el arreglo masivo para procesar solo los primeros 12 IDs.
-        const topIDs = data.objectIDs.slice(0, 12);
+        // 4. Almacenar la totalidad de los IDs y reiniciar el puntero de página
+        allResultsIds = data.objectIDs;
+        currentPage = 1;
         
         if (messageContainer) {
             messageContainer.innerHTML = `
-                <p class="success-message">Se encontraron ${data.total} registros. Cargando una muestra de las primeras ${topIDs.length} obras...</p>
+                <p class="success-message">Se encontraron ${data.total} registros. Cargando resultados...</p>
             `;
         }
 
-        // 5. ENVIAR A RENDERIZAR LOS ID TEMPORALES
-        fetchAndRenderCards(topIDs);
+        // 5. DEJAR LISTA LA LLAMADA AL RENDERIZADO CENTRALIZADO
+        renderPage();
 
     } catch (error) {
         if (loader) loader.classList.add('hidden');
