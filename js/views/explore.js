@@ -122,16 +122,71 @@ async function executeSearch(query) {
 }
 
 /**
- * Recibe un lote de IDs y dibuja cajitas temporales en el grid.
+ * Recibe un lote de IDs, descarga sus datos en paralelo y dibuja
+ * las tarjetas reales de forma segura en la cuadrícula.
  */
 async function fetchAndRenderCards(ids) {
     const gridContainer = document.getElementById('results-grid');
     if (!gridContainer) return;
 
-    ids.forEach(id => {
-        const placeholderCard = document.createElement('div');
-        placeholderCard.className = 'card-placeholder';
-        placeholderCard.textContent = `Cargando datos de la obra ID: ${id}...`;
-        gridContainer.appendChild(placeholderCard);
+    // 1. PASO ASÍNCRONO: Creamos un arreglo de promesas (peticiones a la API)
+    // Usamos el método getObject que creaste en tu met-api.js
+    const promesas = ids.map(id => MetApi.getObject(id));
+
+    // 2. PARALELISMO SEGURO: Disparamos las 12 peticiones al mismo tiempo
+    // Promise.allSettled garantiza que si una obra falla, las otras 11 se muestren igual
+    const resultados = await Promise.allSettled(promesas);
+
+    // Limpiamos los textos temporales de "Cargando datos..." para meter las tarjetas reales
+    gridContainer.textContent = '';
+
+    // 3. RENDERIZADO: Procesamos los resultados que devolvieron los servidores
+    resultados.forEach(resultado => {
+        // Si el servidor rechazó la solicitud de este ID específico, lo saltamos silenciosamente
+        if (resultado.status !== 'fulfilled') return;
+
+        // Extraemos los datos puros de la obra de arte exitosa
+        const obra = resultado.value;
+
+        // 4. REGLA RNF-07: Construcción limpia usando el DOM nativo (Cero innerHTML)
+        const card = document.createElement('div');
+        card.className = 'card-item';
+
+        // Imagen de la obra con control de nulos (fallback si no tiene foto)
+        const img = document.createElement('img');
+        img.className = 'card-img';
+        img.src = obra.primaryImageSmall || 'https://placehold.co/300x400?text=Sin+Imagen';
+        img.alt = obra.title || 'Obra del Met Museum';
+
+        // Contenedor de la información escrita
+        const cardInfo = document.createElement('div');
+        cardInfo.className = 'card-info';
+
+        // Título de la obra
+        const title = document.createElement('h3');
+        title.className = 'card-title';
+        title.textContent = obra.title || 'Título no disponible';
+
+        // Nombre del artista
+        const artist = document.createElement('p');
+        artist.className = 'card-artist';
+        artist.textContent = obra.artistDisplayName || 'Artista desconocido';
+
+        // Botón/Enlace dinámico para ir a la vista de detalle (#detail/ID)
+        const viewMoreBtn = document.createElement('a');
+        viewMoreBtn.className = 'card-btn';
+        viewMoreBtn.href = `#detail/${obra.objectID}`;
+        viewMoreBtn.textContent = 'Ver detalles';
+
+        // 5. ENSAMBLAJE: Unimos las piezas de adentro hacia afuera
+        cardInfo.appendChild(title);
+        cardInfo.appendChild(artist);
+        cardInfo.appendChild(viewMoreBtn);
+
+        card.appendChild(img);
+        card.appendChild(cardInfo);
+
+        // Empujamos la tarjeta terminada al grid de la pantalla
+        gridContainer.appendChild(card);
     });
 }
