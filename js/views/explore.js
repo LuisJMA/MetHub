@@ -16,7 +16,7 @@ function renderExplore() {
     const app = document.getElementById('app');
 
     console.log("🚀 ¡Sí! El enrutador llamó a renderExplore() con éxito.");
-    // 1. Inyectamos el esqueleto HTML del buscador de forma dinámica
+    // 1. Inyectamos el esqueleto HTML con el nuevo panel de filtros
     app.innerHTML = `
         <div class="explore-view">
             <header class="explore-header">
@@ -24,19 +24,43 @@ function renderExplore() {
                 <p>Busca entre más de 500,000 años de historia del arte universal.</p>
             </header>
 
-            <!-- Formulario de Búsqueda -->
+            <!-- Formulario de Búsqueda y Filtros -->
             <form id="search-form" class="search-box">
-                <input 
-                    type="text" 
-                    id="search-input" 
-                    placeholder="Ej: sunflowers, Rembrandt, Da Vinci, armor..." 
-                    required
-                    autocomplete="off"
-                >
-                <button type="submit" id="search-btn">Buscar</button>
+                <div class="search-main-row">
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Ej: sunflowers, Rembrandt, Da Vinci, armor..." 
+                        required
+                        autocomplete="off"
+                    >
+                    <button type="submit" id="search-btn">Buscar</button>
+                </div>
+
+                <!-- NUEVO: Panel de Filtros Opcionales -->
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label for="department-select">Departamento:</label>
+                        <select id="department-select">
+                            <option value="">Todos los departamentos</option>
+                            <option value="11">Pinturas Europeas</option>
+                            <option value="9">Arte Egipcio</option>
+                            <option value="13">Arte Griego y Romano</option>
+                            <option value="1">Artes Decorativas Americanas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Rango de Años:</label>
+                        <div class="year-inputs">
+                            <input type="number" id="date-begin" placeholder="Desde (ej: 1500)">
+                            <input type="number" id="date-end" placeholder="Hasta (ej: 1900)">
+                        </div>
+                    </div>
+                </div>
             </form>
 
-            <!-- Contenedor del Loader (Se mostrará mientras descarga de internet) -->
+            <!-- Contenedor del Loader -->
             <div id="search-loader" class="loader-container hidden">
                 <div class="spinner"></div>
                 <p>Viajando a los servidores del MET...</p>
@@ -48,7 +72,7 @@ function renderExplore() {
             <!-- Cuadrícula (Grid) donde se pintarán las tarjetas de las obras -->
             <div id="results-grid" class="results-grid"></div>
 
-            <!-- NUEVO: Controles de Paginación -->
+            <!-- Controles de Paginación -->
             <div class="pagination-controls">
                 <button id="prev-btn" onclick="prevPage()" disabled>Anterior</button>
                 <span id="page-indicator">Página 1 de 1</span>
@@ -60,9 +84,8 @@ function renderExplore() {
     // 2. Capturamos los elementos recién creados en el DOM para asignarles lógica
     const searchForm = document.getElementById('search-form');
     
-    // Escuchamos el evento 'submit' (cuando el usuario presiona Enter o hace clic en Buscar)
     searchForm.addEventListener('submit', (event) => {
-        event.preventDefault(); // Evita que la página se recargue e interrumpa la SPA
+        event.preventDefault(); // Evita que la página se recargue
         
         const query = document.getElementById('search-input').value.trim();
         
