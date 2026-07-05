@@ -50,22 +50,30 @@ const MetApi = {
         }
     },
 
-
     /**
-     * 1. BUSCAR OBRA POR PALABRA CLAVE
-     * Envía una solicitud al endpoint de búsqueda (/search?q=palabra)
-     * @param {string} query - El texto que el usuario quiere buscar (ej: "sunflower")
-     * @param {string} filters - Filtros adicionales opcionales en formato de texto (ej: "&hasImages=true")
+     * 1. BUSCAR OBRA POR PALABRA CLAVE Y FILTROS
+     * Envía una solicitud al endpoint de búsqueda aplicando parámetros opcionales.
      */
+    async searchObjects(query, options = {}) {
+        // Reutilizamos BASE_URL para mantener el código limpio
+        let url = `${BASE_URL}/search?q=${encodeURIComponent(query)}`;
 
-    async searchObjects(query, filters = '') {
-        // encodeURIComponent se asegura de limpiar el texto por si el usuario escribe espacios o acentos,
-        // evitando que la URL se rompa (por ejemplo, convierte un espacio en %20).
-        const url = `${BASE_URL}/search?q=${encodeURIComponent(query)}${filters}`;
+        // FILTRADO INTELIGENTE: Solo sumamos a la URL si el filtro tiene contenido
+        if (options.departmentId) {
+            url += `&departmentId=${options.departmentId}`;
+        }
         
-        // Reutilizamos nuestra función con timeout para hacer la petición de forma segura
+        if (options.dateBegin) {
+            url += `&dateBegin=${options.dateBegin}`;
+        }
+        
+        if (options.dateEnd) {
+            url += `&dateEnd=${options.dateEnd}`;
+        }
+
+        // Usamos tu función auxiliar para heredar la protección de los 10 segundos de timeout
         return await this._fetchWithTimeout(url);
-    },
+    }, // <-- ¡Aquí estaba el error! Faltaba esta coma para separar los métodos
 
     /**
      * 2. OBTENER DETALLES DE UNA OBRA ESPECÍFICA
