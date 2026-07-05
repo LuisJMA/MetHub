@@ -109,9 +109,21 @@ async function executeSearch(query) {
     if (messageContainer) messageContainer.textContent = '';  
     if (gridContainer) gridContainer.textContent = '';     
 
+    // 1.5. CAPTURAR LOS FILTROS DEL DOM
+    const department = document.getElementById('department-select')?.value || '';
+    const dateBegin = document.getElementById('date-begin')?.value || '';
+    const dateEnd = document.getElementById('date-end')?.value || '';
+
+    // Creamos un objeto con los filtros limpios para pasárselo a la API
+    const options = {
+        departmentId: department,
+        dateBegin: dateBegin,
+        dateEnd: dateEnd
+    };
+
     try {
-        // 2. CONSUMIR LA API REAL
-        const data = await MetApi.searchObjects(query);
+        // 2. CONSUMIR LA API REAL (Pasándole la query y los filtros opcionales)
+        const data = await MetApi.searchObjects(query, options);
 
         // Ocultamos el loader inmediatamente al recibir respuesta
         if (loader) loader.classList.add('hidden');
@@ -120,7 +132,7 @@ async function executeSearch(query) {
         if (!data || data.total === 0 || !data.objectIDs) {
             if (messageContainer) {
                 messageContainer.innerHTML = `
-                    <p class="info-message">No se encontraron obras de arte para <strong>"${query}"</strong>. ¡Prueba con otro término!</p>
+                    <p class="info-message">No se encontraron obras de arte para <strong>"${query}"</strong> con los filtros seleccionados. ¡Prueba otra combinación!</p>
                 `;
             }
             return; 
@@ -136,7 +148,7 @@ async function executeSearch(query) {
             `;
         }
 
-        // 5. DEJAR LISTA LA LLAMADA AL RENDERIZADO CENTRALIZADO
+        // 5. LLAMADA AL RENDERIZADO CENTRALIZADO
         renderPage();
 
     } catch (error) {
