@@ -56,7 +56,7 @@ const MetApi = {
      */
     async searchObjects(query, options = {}) {
         // Reutilizamos BASE_URL para mantener el código limpio
-        let url = `${BASE_URL}/search?q=${encodeURIComponent(query)}`;
+        let url = `${BASE_URL}/search?hasImages=true&q=${encodeURIComponent(query)}`;
 
         // FILTRADO INTELIGENTE: Solo sumamos a la URL si el filtro tiene contenido
         if (options.departmentId) {
@@ -73,7 +73,7 @@ const MetApi = {
 
         // Usamos tu función auxiliar para heredar la protección de los 10 segundos de timeout
         return await this._fetchWithTimeout(url);
-    }, // <-- ¡Aquí estaba el error! Faltaba esta coma para separar los métodos
+    }, 
 
     /**
      * 2. OBTENER DETALLES DE UNA OBRA ESPECÍFICA
