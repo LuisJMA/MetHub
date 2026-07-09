@@ -15,7 +15,7 @@ const Router = {
     routes: {
         '#home': () => renderHome(),
         '#explore': () => renderExplore(),
-        '#detail': (id) => renderDetail(id),
+        '#detail/': (id) => renderDetail(id),
         '#departments': () => renderDepartments(),
         '#compare': () => renderCompare()
     },
@@ -67,7 +67,7 @@ const Router = {
             const id = hash.split('/')[1];
             
             // Buscamos la ruta '#detail' en nuestro diccionario y la ejecutamos pasándole el ID como argumento.
-            this.routes['#detail'](id);
+            this.routes['#detail/'](id);
             
             // Cortamos la ejecución de la función aquí con un 'return' para que no intente ejecutar el código de abajo.
             return;
