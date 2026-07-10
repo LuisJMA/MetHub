@@ -1,8 +1,11 @@
 // js/views/compare.js
 
-// Variables de estado global para la vista del comparador
+// Variables de estado global para rastrear las obras fijadas en cada panel
 let obraSeleccionadaA = null;
 let obraSeleccionadaB = null;
+
+// Objeto para almacenar los temporizadores del Debounce de cada panel
+const timersDebounce = { A: null, B: null };
 
 /**
  * FUNCIÓN CENTRAL: renderCompare
@@ -11,7 +14,6 @@ let obraSeleccionadaB = null;
 async function renderCompare() {
     const app = document.getElementById('app');
     
-    // Capturamos el hash actual para ver si viene un ID de preselección (ej: #compare/436535)
     const hash = window.location.hash;
     let idPreseleccionado = null;
     
@@ -19,7 +21,6 @@ async function renderCompare() {
         idPreseleccionado = hash.split('/')[1].trim();
     }
 
-    // 1. Inyectamos la estructura estática controlada con los dos paneles vacíos
     app.innerHTML = `
         <div class="view-container">
             <h1 class="view-title">⚖️ Comparador de Obras Lado a Lado</h1>
@@ -35,12 +36,9 @@ async function renderCompare() {
         </div>
     `;
 
-    // 2. Inicializamos de forma independiente el estado visual de cada panel
-    // Inicialmente ambos muestran su buscador interno vacío
     renderEstadoBuscadorPanel('A');
     renderEstadoBuscadorPanel('B');
 
-    // 3. REQUISITO 4.6.7: Si hay un ID preseleccionado por URL, lo clavamos en el Panel A
     if (idPreseleccionado) {
         const panelA = document.getElementById('panel-A');
         if (panelA) {
@@ -48,11 +46,10 @@ async function renderCompare() {
             try {
                 const obra = await MetApi.getObject(idPreseleccionado);
                 obraSeleccionadaA = obra;
-                // Dibujamos la obra fijada en el panel A
                 renderObraFijadaPanel('A', obra);
             } catch (error) {
                 console.error("Error al cargar obra preseleccionada:", error);
-                renderEstadoBuscadorPanel('A'); // Si falla, vuelve al buscador
+                renderEstadoBuscadorPanel('A');
             }
         }
     }
@@ -60,7 +57,7 @@ async function renderCompare() {
 
 /**
  * FUNCIÓN: renderEstadoBuscadorPanel
- * Dibuja el input de texto inicial para un panel específico (A o B).
+ * Dibuja el campo de texto e inicializa los eventos con Debounce.
  */
 function renderEstadoBuscadorPanel(panelId) {
     const panel = document.getElementById(`panel-${panelId}`);
@@ -73,22 +70,130 @@ function renderEstadoBuscadorPanel(panelId) {
                 type="text" 
                 id="search-input-${panelId}" 
                 class="compare-search-input" 
-                placeholder="Busca una obra por nombre, artista..." 
+                placeholder="Busca una obra por nombre, artista, tema..." 
                 autocomplete="off"
             >
             <p class="panel-status-text" id="status-${panelId}">Busca y elige una obra para comparar.</p>
             <div id="results-cascade-${panelId}" class="results-cascade"></div>
         </div>
     `;
+
+    const input = document.getElementById(`search-input-${panelId}`);
     
-    // Aquí conectaremos el Debounce en la siguiente fase...
+    // Escuchamos la escritura del usuario aplicando DEBOUNCE de 400ms (Req. 4.6.2.2)
+    input.addEventListener('input', (e) => {
+        const termino = e.target.value.trim();
+        
+        // Limpiamos el temporizador anterior si el usuario sigue escribiendo rápido
+        clearTimeout(timersDebounce[panelId]);
+
+        if (termino.length < 3) {
+            document.getElementById(`results-cascade-${panelId}`).innerHTML = '';
+            document.getElementById(`status-${panelId}`).textContent = 'Busca y elige una obra para comparar.';
+            return;
+        }
+
+        // Activamos el temporizador: Espera 400ms de silencio antes de disparar a la API
+        timersDebounce[panelId] = setTimeout(() => {
+            ejecutarBusquedaInterna(panelId, termino);
+        }, 400);
+    });
+}
+
+/**
+ * FUNCIÓN: ejecutarBusquedaInterna
+ * Llama a la API, resuelve los primeros 5-6 IDs en paralelo y pinta las mini-tarjetas.
+ */
+async function ejecutarBusquedaInterna(panelId, termino) {
+    const statusText = document.getElementById(`status-${panelId}`);
+    const cascadeContainer = document.getElementById(`results-cascade-${panelId}`);
+    
+    if (!statusText || !cascadeContainer) return;
+
+    statusText.textContent = '⏳ Buscando coincidencias...';
+    cascadeContainer.innerHTML = '';
+
+    try {
+        // Buscamos obras con imágenes basándonos en el término
+        const dataIds = await MetApi.searchObjects(termino);
+
+        if (!dataIds || !dataIds.objectIDs || dataIds.objectIDs.length === 0) {
+            statusText.textContent = '❌ No se encontraron obras con ese término.';
+            return;
+        }
+
+        statusText.textContent = '⏳ Cargando previsualizaciones...';
+
+        // Tomamos únicamente los primeros 5 a 6 IDs (Req. 4.6.2.2)
+        const subsetIds = dataIds.objectIDs.slice(0, 6);
+
+        // Disparamos las solicitudes en paralelo controlado con Promise.allSettled
+        const promesas = subsetIds.map(id => MetApi.getObject(id));
+        const resultados = await Promise.allSettled(promesas);
+
+        statusText.textContent = 'Resultados encontrados:';
+
+        // Renderizado seguro de las mini-tarjetas en cascada utilizando el DOM nativo
+        resultados.forEach(item => {
+            if (item.status === 'fulfilled' && item.value) {
+                const obra = item.value;
+                
+                // Determinamos si esta obra ya está seleccionada en el panel opuesto (Req. 4.6.4)
+                const panelOpuesto = (panelId === 'A') ? obraSeleccionadaB : obraSeleccionadaA;
+                const esDuplicado = panelOpuesto && String(panelOpuesto.objectID) === String(obra.objectID);
+
+                // Creamos el contenedor de la mini-tarjeta
+                const miniCard = document.createElement('div');
+                miniCard.className = `mini-target-cascade ${esDuplicado ? 'disabled-card' : ''}`;
+
+                // Imagen pequeña
+                const img = document.createElement('img');
+                img.src = obra.primaryImageSmall || 'https://placehold.co/80x80?text=No+Img';
+                img.alt = obra.title || 'Arte';
+
+                // Textos
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'mini-card-info';
+                
+                const title = document.createElement('h4');
+                title.textContent = obra.title || 'Título Desconocido';
+                
+                const artist = document.createElement('p');
+                artist.textContent = obra.artistDisplayName || 'Anónimo';
+
+                infoDiv.appendChild(title);
+                infoDiv.appendChild(artist);
+                miniCard.appendChild(img);
+                miniCard.appendChild(infoDiv);
+
+                if (esDuplicado) {
+                    const alertText = document.createElement('span');
+                    alertText.className = 'duplicate-alert';
+                    alertText.textContent = 'Ya seleccionada';
+                    miniCard.appendChild(alertText);
+                } else {
+                    // Si no es duplicado, el usuario puede hacer clic para fijarla
+                    miniCard.addEventListener('click', () => {
+                        if (panelId === 'A') obraSeleccionadaA = obra;
+                        if (panelId === 'B') obraSeleccionadaB = obra;
+                        renderObraFijadaPanel(panelId, obra);
+                    });
+                }
+
+                cascadeContainer.appendChild(miniCard);
+            }
+        });
+
+    } catch (error) {
+        console.error("Error en búsqueda interna del comparador:", error);
+        statusText.textContent = '❌ Error en la búsqueda. Inténtalo de nuevo.';
+    }
 }
 
 /**
  * FUNCIÓN: renderObraFijadaPanel
- * Muestra la tarjeta definitiva de la obra elegida en su respectivo panel.
+ * Muestra la tarjeta definitiva de la obra seleccionada en su respectivo panel.
  */
-
 function renderObraFijadaPanel(panelId, obra) {
     const panel = document.getElementById(`panel-${panelId}`);
     if (!panel) return;
@@ -112,4 +217,6 @@ function renderObraFijadaPanel(panelId, obra) {
         
         renderEstadoBuscadorPanel(panelId);
     });
+    
+    // NOTA: La verificación cruzada y disparo de la Tabla Comparativa se conectará en la Fase 3.
 }
