@@ -108,9 +108,3 @@ function renderDepartments() {
     app.appendChild(h1);
 }
 
-function renderCompare() {
-    const app = document.getElementById('app');
-    const h1 = document.createElement('h1');
-    h1.textContent = "Comparador de Obras Lado a Lado (#compare)";
-    app.appendChild(h1);
-}
