@@ -56,6 +56,19 @@ const Router = {
         appContainer.textContent = '';
 
         /**
+         * Sincronizar el indicador visual del Navbar activo
+         * Buscamos todos los enlaces de navegación y les añadimos o quitamos la clase .active
+         */
+        document.querySelectorAll('.nav-links a, .logo').forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && hash.startsWith(href)) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+
+        /**
          * CASO ESPECIAL (Rutas con ID dinámico):
          * Si el hash empieza con '#detail/', significa que el usuario quiere ver una obra específica (ej: #detail/436535).
          * No podemos buscar "#detail/436535" directamente en nuestro diccionario 'routes' porque ese número cambia siempre.
@@ -70,6 +83,13 @@ const Router = {
             this.routes['#detail/'](id);
             
             // Cortamos la ejecución de la función aquí con un 'return' para que no intente ejecutar el código de abajo.
+            return;
+        }
+
+        // NUEVO: Capturar ruta dinámica del artista (V-05)
+        if (hash.startsWith('#artist/')) {
+            const name = decodeURIComponent(hash.split('/')[1]);
+            this.routes['#artist/'](name);
             return;
         }
 
@@ -88,7 +108,7 @@ const Router = {
         } else {
             // Si el usuario se pone creativo y escribe una ruta que no existe (ej: '#perrito'), 
             // el sistema lo rescata y lo redirige automáticamente a la pantalla de Inicio.
-            this.routes['#home']();
+            window.location.hash = '#home';
         }
     }
 
