@@ -101,14 +101,6 @@ function renderHome() {
 }
 
 
-function renderDetail(id) {
-    const app = document.getElementById('app');
-    const h1 = document.createElement('h1');
-    // Usamos comillas invertidas (backticks) para poder meter la variable 'id' directamente en el texto
-    h1.textContent = `Detalle de la Obra con ID: ${id} (#detail)`;
-    app.appendChild(h1);
-}
-
 function renderDepartments() {
     const app = document.getElementById('app');
     const h1 = document.createElement('h1');
