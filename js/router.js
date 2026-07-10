@@ -73,6 +73,12 @@ const Router = {
             return;
         }
 
+        // NUEVO: Capturar ruta dinámica del comparador con preselección
+        if (hash.startsWith('#compare')) {
+            this.routes['#compare']();
+            return;
+        }
+
         /**
          * CASO NORMAL:
          * Si la ruta existe textualmente en nuestro diccionario (ej: '#explore'), ejecutamos su función asociada.
