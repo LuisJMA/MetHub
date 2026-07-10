@@ -226,6 +226,15 @@ async function fetchAndRenderCards(ids) {
         viewMoreBtn.href = `#detail/${obra.objectID}`;
         viewMoreBtn.textContent = 'Ver detalles';
 
+
+        // Forzamos el cambio de hash por JavaScript
+        // Al hacer clic, le decimos explícitamente al navegador que actualice la URL.
+        // Esto garantiza que el evento 'hashchange' que escucha tu router.js se dispare sí o sí.
+        viewMoreBtn.addEventListener('click', (e) => {
+            // Permitimos que cambie el hash de la URL normalmente
+            window.location.hash = `#detail/${obra.objectID}`;
+        });
+
         // 5. ENSAMBLAJE: Unimos las piezas de adentro hacia afuera
         cardInfo.appendChild(title);
         cardInfo.appendChild(artist);
