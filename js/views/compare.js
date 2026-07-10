@@ -80,7 +80,7 @@ function renderEstadoBuscadorPanel(panelId) {
 
     const input = document.getElementById(`search-input-${panelId}`);
     
-    // Escuchamos la escritura del usuario aplicando DEBOUNCE de 400ms (Req. 4.6.2.2)
+    // Escuchamos la escritura del usuario aplicando DEBOUNCE de 400ms 
     input.addEventListener('input', (e) => {
         const termino = e.target.value.trim();
         
@@ -124,7 +124,7 @@ async function ejecutarBusquedaInterna(panelId, termino) {
 
         statusText.textContent = '⏳ Cargando previsualizaciones...';
 
-        // Tomamos únicamente los primeros 5 a 6 IDs (Req. 4.6.2.2)
+        // Tomamos únicamente los primeros 5 a 6 IDs 
         const subsetIds = dataIds.objectIDs.slice(0, 6);
 
         // Disparamos las solicitudes en paralelo controlado con Promise.allSettled
@@ -138,7 +138,7 @@ async function ejecutarBusquedaInterna(panelId, termino) {
             if (item.status === 'fulfilled' && item.value) {
                 const obra = item.value;
                 
-                // Determinamos si esta obra ya está seleccionada en el panel opuesto (Req. 4.6.4)
+                // Determinamos si esta obra ya está seleccionada en el panel opuesto 
                 const panelOpuesto = (panelId === 'A') ? obraSeleccionadaB : obraSeleccionadaA;
                 const esDuplicado = panelOpuesto && String(panelOpuesto.objectID) === String(obra.objectID);
 
@@ -218,5 +218,91 @@ function renderObraFijadaPanel(panelId, obra) {
         renderEstadoBuscadorPanel(panelId);
     });
     
-    // NOTA: La verificación cruzada y disparo de la Tabla Comparativa se conectará en la Fase 3.
+    // REQUISITO 4.6.5: Si ambos paneles tienen obras, construimos y mostramos la tabla
+    if (obraSeleccionadaA && obraSeleccionadaB) {
+        renderTablaComparativa();
+    }
+}
+
+/**
+ * FUNCIÓN: renderTablaComparativa
+ * Genera la estructura table nativa, contrasta celdas aplicando clases de resaltado y calcula años.
+ */
+function renderTablaComparativa() {
+    const container = document.getElementById('compare-table-container');
+    if (!container) return;
+
+    container.className = 'compare-table-section';
+    container.innerHTML = '';
+
+    // Auxiliares para normalizar booleanos a texto amigable
+    const formatBool = (val) => val ? 'Sí' : 'No';
+
+    // Obtenemos los años cronológicos 
+    const anioA = obraSeleccionadaA.objectEndDate || obraSeleccionadaA.objectBeginDate || 0;
+    const anioB = obraSeleccionadaB.objectEndDate || obraSeleccionadaB.objectBeginDate || 0;
+
+    // Matriz de campos mínimos obligatorios a comparar 
+    const mapeoFilas = [
+        { label: 'Artista', valA: obraSeleccionadaA.artistDisplayName || 'Anónimo', valB: obraSeleccionadaB.artistDisplayName || 'Anónimo' },
+        { label: 'Año estimado', valA: anioA || 'Desconocido', valB: anioB || 'Desconocido' },
+        { label: 'Departamento', valA: obraSeleccionadaA.department || 'No especificado', valB: obraSeleccionadaB.department || 'No especificado' },
+        { label: 'Técnica / Medio', valA: obraSeleccionadaA.medium || 'No especificado', valB: obraSeleccionadaB.medium || 'No especificado' },
+        { label: 'Clasificación', valA: obraSeleccionadaA.classification || 'No especificada', valB: obraSeleccionadaB.classification || 'No especificada' },
+        { label: 'Cultura', valA: obraSeleccionadaA.culture || 'No especificada', valB: obraSeleccionadaB.culture || 'No especificada' },
+        { label: '¿Obra Destacada?', valA: formatBool(obraSeleccionadaA.isHighlight), valB: formatBool(obraSeleccionadaB.isHighlight) },
+        { label: '¿Dominio Público?', valA: formatBool(obraSeleccionadaA.isPublicDomain), valB: formatBool(obraSeleccionadaB.isPublicDomain) }
+    ];
+
+    // Construcción del nodo Tabla
+    const h2 = document.createElement('h2');
+    h2.className = 'table-section-title';
+    h2.textContent = '📊 Análisis de Contrastes Técnicos';
+    container.appendChild(h2);
+
+    const table = document.createElement('table');
+    table.className = 'compare-table-element';
+
+    // Cabecera
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>Característica</th>
+            <th>Obra Panel A</th>
+            <th>Obra Panel B</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    // Procesamos cada fila inyectando clases dinámicas si los valores difieren 
+    mapeoFilas.forEach(fila => {
+        const tr = document.createElement('tr');
+        
+        // Verificamos si los strings o números son distintos para resaltar la fila
+        const difieren = String(fila.valA).trim().toLowerCase() !== String(fila.valB).trim().toLowerCase();
+        if (difieren) {
+            tr.className = 'row-highlight-difference'; // Clase CSS para destacar la fila
+        }
+
+        tr.innerHTML = `
+            <td class="td-label">${fila.label}</td>
+            <td>${fila.valA}</td>
+            <td>${fila.valB}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+
+    // Debajo de la tabla, mostrar la diferencia en años 
+    if (anioA && anioB) {
+        const diferenciaAnios = Math.abs(anioA - anioB);
+        const diffWrapper = document.createElement('div');
+        diffWrapper.className = 'age-difference-badge';
+        diffWrapper.innerHTML = `<span>⏳ Brecha temporal:</span> Existe una diferencia de <strong>${diferenciaAnios} años</strong> entre la creación de ambas piezas de arte.`;
+        container.appendChild(diffWrapper);
+    }
 }
