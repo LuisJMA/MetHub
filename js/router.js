@@ -17,7 +17,8 @@ const Router = {
         '#explore': () => renderExplore(),
         '#detail/': (id) => renderDetail(id),
         '#departments': () => renderDepartments(),
-        '#compare': () => renderCompare()
+        '#compare': () => renderCompare(),
+        '#artist/': (name) => renderArtist(name) // Nueva ruta dinámica de artista (js/views/artist.js)
     },
 
     /**
@@ -43,94 +44,62 @@ const Router = {
      * Esta función analiza la URL actual, limpia la pantalla y decide qué vista pintar.
      */
     handleRoute() {
-        // Captura el hash actual (ej: "#explore"). 
-        // Si está vacío (porque el usuario acaba de entrar a la web), por defecto le asignamos '#home'.
         const hash = window.location.hash || '#home';
-        
-        // Buscamos nuestro contenedor principal (en el HTML).
-        const appContainer = document.getElementById('app');
-        
-        /**
-         * Borramos todo lo que había de la pantalla anterior.
-         */
-        appContainer.textContent = '';
+        const app = document.getElementById('app');
 
-        /**
-         * Sincronizar el indicador visual del Navbar activo
-         * Buscamos todos los enlaces de navegación y les añadimos o quitamos la clase .active
-         */
-        document.querySelectorAll('.nav-links a, .logo').forEach(link => {
+        // Cada vez que cambiamos de pantalla, limpiamos el contenedor principal
+        if (app) app.innerHTML = '';
+
+        // --- MANEJO DE RUTAS DINÁMICAS (PARÁMETROS) ---
+
+        // CASO A: Detalle de Obra (#detail/ID)
+        if (hash.startsWith('#detail/')) {
+            const id = hash.split('/')[1];
+            this.routes['#detail/'](id);
+            return;
+        }
+
+        // CASO B: Obras del Artista (#artist/NombreArtista)
+        if (hash.startsWith('#artist/')) {
+            const rawName = hash.split('/')[1];
+            // Decodificamos el nombre por si tiene caracteres especiales como espacios o tildes
+            const name = decodeURIComponent(rawName);
+            this.routes['#artist/'](name);
+            return;
+        }
+
+        // CASO C: Comparador con o sin preselección (#compare o #compare/ID)
+        if (hash.startsWith('#compare')) {
+            this.routes['#compare']();
+            return;
+        }
+
+        // --- CASO NORMAL (RUTAS ESTÁTICAS) ---
+        if (this.routes[hash]) {
+            this.routes[hash]();
+        } else {
+            // Si la ruta no existe, rescata al usuario llevándolo a Inicio
+            window.location.hash = '#home';
+        }
+
+        // --- INDICADOR VISUAL ACTIVO  ---
+        // Sincroniza dinámicamente qué enlace del menú tiene la clase '.active'
+        document.querySelectorAll('.nav-links a').forEach(link => {
             const href = link.getAttribute('href');
+            // Si el enlace coincide con el inicio del hash actual, lo activa
             if (href && hash.startsWith(href)) {
                 link.classList.add('active');
             } else {
                 link.classList.remove('active');
             }
         });
-
-        /**
-         * CASO ESPECIAL (Rutas con ID dinámico):
-         * Si el hash empieza con '#detail/', significa que el usuario quiere ver una obra específica (ej: #detail/436535).
-         * No podemos buscar "#detail/436535" directamente en nuestro diccionario 'routes' porque ese número cambia siempre.
-         */
-        if (hash.startsWith('#detail/')) {
-            // Dividimos el texto usando la barra '/' como separador. 
-            // Si el texto es "#detail/436535", split('/') nos devuelve un arreglo: ["#detail", "436535"].
-            // Guardamos la posición [1], que es justamente el número de ID de la obra.
-            const id = hash.split('/')[1];
-            
-            // Buscamos la ruta '#detail' en nuestro diccionario y la ejecutamos pasándole el ID como argumento.
-            this.routes['#detail/'](id);
-            
-            // Cortamos la ejecución de la función aquí con un 'return' para que no intente ejecutar el código de abajo.
-            return;
-        }
-
-        // NUEVO: Capturar ruta dinámica del artista (V-05)
-        if (hash.startsWith('#artist/')) {
-            const name = decodeURIComponent(hash.split('/')[1]);
-            this.routes['#artist/'](name);
-            return;
-        }
-
-        // NUEVO: Capturar ruta dinámica del comparador con preselección
-        if (hash.startsWith('#compare')) {
-            this.routes['#compare']();
-            return;
-        }
-
-        /**
-         * CASO NORMAL:
-         * Si la ruta existe textualmente en nuestro diccionario (ej: '#explore'), ejecutamos su función asociada.
-         */
-        if (this.routes[hash]) {
-            this.routes[hash]();
-        } else {
-            // Si el usuario se pone creativo y escribe una ruta que no existe (ej: '#perrito'), 
-            // el sistema lo rescata y lo redirige automáticamente a la pantalla de Inicio.
-            window.location.hash = '#home';
-        }
     }
 
 };
 
 
-// --- 4. FUNCIONES TEMPORALES DE RENDERIZADO ---
-// Estas funciones simulan las pantallas de la app de forma temporal. 
-// Crean un título HTML en el aire y lo meten dentro del contenedor '#app'.
-
-function renderHome() {
-    const app = document.getElementById('app');
-    const h1 = document.createElement('h1');
-    h1.textContent = "Bienvenido a la Página Principal (#home)";
-    app.appendChild(h1);
-}
 
 
-function renderDepartments() {
-    const app = document.getElementById('app');
-    const h1 = document.createElement('h1');
-    h1.textContent = "Áreas Curatoriales y Departamentos (#departments)";
-    app.appendChild(h1);
-}
+
+
 
